@@ -71,35 +71,33 @@ jobs:
           TS="${{ steps.generate.outputs.timestamp }}"
           TOTAL="${{ steps.generate.outputs.simple_size }}"
 
-          # Header (literal heredoc)
-          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
-## ✅ Composite List Generation Complete
-MD
+          # Write summary
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ## ✅ Composite List Generation Complete
+          EOF
+          
           echo "**Timestamp**: ${TS}" >> "$GITHUB_STEP_SUMMARY"
           echo "**Total Domains**: ${TOTAL}" >> "$GITHUB_STEP_SUMMARY"
-          echo >> "$GITHUB_STEP_SUMMARY"
-
-          # Top 10 block start (literal)
-          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
-### Top 10 Domains
-```
-MD
-
-          # Actual top 10
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ### Top 10 Domains
+          ```
+          EOF
+          
           head -10 "$SIMPLE" >> "$GITHUB_STEP_SUMMARY"
+          
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          \`\`\`
 
-          # Close block + file list (expand vars)
-          cat >> "$GITHUB_STEP_SUMMARY" <<MD
-```
-
-### Files
-- Simple: \`$SIMPLE\`
-- Full: \`$FULL\`
-MD
+          ### Files
+          - Simple: \`$SIMPLE\`
+          - Full: \`$FULL\`
+          EOF
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ steps.generate.outputs.simple_file }}
@@ -121,10 +119,10 @@ MD
             - Full CSV: ${{ steps.generate.outputs.full_file }}
 
             ### Methodology
-            Dowdall scoring with weighted averaging (research‑grounded aggregation).
+            Dowdall scoring with weighted averaging (research-grounded aggregation).
 
             ### Important
-            Read LEGAL_NOTICE.md before use; repository includes AI‑generated code and provides no warranty.
+            Read LEGAL_NOTICE.md before use; repository includes AI-generated code and provides no warranty.
 
             ---
             Repository: https://github.com/${{ github.repository }}
