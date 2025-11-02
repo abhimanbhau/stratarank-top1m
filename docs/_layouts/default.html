@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title | default: site.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <style>
         .fade-in {
             opacity: 0;
@@ -42,9 +43,9 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <div class="prose lg:prose-xl mx-auto">
+        <article class="prose lg:prose-xl mx-auto">
             {{ content }}
-        </div>
+        </article>
     </main>
 
     <footer class="bg-white mt-auto">
