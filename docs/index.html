@@ -1,0 +1,21 @@
+---
+layout: default
+---
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<div id="content">Loading documentation...</div>
+<script>
+    fetch('../README.md')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(text => {
+            document.getElementById('content').innerHTML = marked.parse(text);
+        })
+        .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+            document.getElementById('content').innerHTML = '<p>Error loading documentation. Please check the console for details.</p>';
+        });
+</script>
