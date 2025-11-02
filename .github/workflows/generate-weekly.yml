@@ -26,7 +26,9 @@ jobs:
           cache: 'pip'
 
       - name: Install Dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -61,22 +63,39 @@ jobs:
           echo "✓ Generation complete"
 
       - name: Summary
+        shell: bash
         run: |
-          {
-            echo "## ✅ Composite List Generation Complete"
-            echo
-            echo "**Timestamp**: ${{ steps.generate.outputs.timestamp }}"
-            echo "**Total Domains**: ${{ steps.generate.outputs.simple_size }}"
-            echo
-            echo "### Top 10 Domains"
-            echo '```
-            head -10 "${{ steps.generate.outputs.simple_file }}"
-            echo '```'
-            echo
-            echo "### Files"
-            echo "- Simple: \`${{ steps.generate.outputs.simple_file }}\`"
-            echo "- Full: \`${{ steps.generate.outputs.full_file }}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          SIMPLE="${{ steps.generate.outputs.simple_file }}"
+          FULL="${{ steps.generate.outputs.full_file }}"
+          TS="${{ steps.generate.outputs.timestamp }}"
+          TOTAL="${{ steps.generate.outputs.simple_size }}"
+
+          # Header (literal heredoc)
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+## ✅ Composite List Generation Complete
+MD
+          echo "**Timestamp**: ${TS}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total Domains**: ${TOTAL}" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+
+          # Top 10 block start (literal)
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+### Top 10 Domains
+```
+MD
+
+          # Actual top 10
+          head -10 "$SIMPLE" >> "$GITHUB_STEP_SUMMARY"
+
+          # Close block + file list (expand vars)
+          cat >> "$GITHUB_STEP_SUMMARY" <<MD
+```
+
+### Files
+- Simple: \`$SIMPLE\`
+- Full: \`$FULL\`
+MD
 
       - name: Create Release
         id: create_release
@@ -105,7 +124,7 @@ jobs:
             Dowdall scoring with weighted averaging (research‑grounded aggregation).
 
             ### Important
-            Read LEGAL_NOTICE.md before use. This repository includes AI‑generated code and provides no warranty.
+            Read LEGAL_NOTICE.md before use; repository includes AI‑generated code and provides no warranty.
 
             ---
             Repository: https://github.com/${{ github.repository }}
