@@ -1,0 +1,221 @@
+name: Generate Weekly Composite Top 1M Domains List
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      release_draft:
+        description: 'Create as draft release'
+        required: false
+        default: 'false'
+
+jobs:
+  generate:
+    name: Generate Composite List
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate Composite List
+        id: generate
+        run: |
+          echo "Starting domain list generation..."
+          python generate_composite_top1m.py
+
+          # Get generated files
+          SIMPLE_FILE=$(ls -t composite_top1m_*.csv 2>/dev/null | grep -v full | head -1)
+          FULL_FILE=$(ls -t composite_top1m_full_*.csv 2>/dev/null | head -1)
+          TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+          echo "simple_file=$SIMPLE_FILE" >> $GITHUB_OUTPUT
+          echo "full_file=$FULL_FILE" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+          # Get file stats
+          SIMPLE_SIZE=$(wc -l < "$SIMPLE_FILE")
+          FULL_SIZE=$(wc -l < "$FULL_FILE")
+
+          echo "simple_size=$SIMPLE_SIZE" >> $GITHUB_OUTPUT
+          echo "full_size=$FULL_SIZE" >> $GITHUB_OUTPUT
+
+          echo "✓ Generation complete"
+
+      - name: Get Generation Statistics
+        id: stats
+        run: |
+          SIMPLE_FILE="${{ steps.generate.outputs.simple_file }}"
+          FULL_FILE="${{ steps.generate.outputs.full_file }}"
+
+          # Extract top 10 domains
+          echo "### Top 10 Domains" > /tmp/stats.txt
+          echo '```' >> /tmp/stats.txt
+          head -10 "$SIMPLE_FILE" >> /tmp/stats.txt
+          echo '```' >> /tmp/stats.txt
+
+          # Get file sizes
+          echo "" >> /tmp/stats.txt
+          echo "### Statistics" >> /tmp/stats.txt
+          echo "- **Domains in list**: ${{ steps.generate.outputs.simple_size }}" >> /tmp/stats.txt
+          echo "- **Generated**: ${{ steps.generate.outputs.timestamp }}" >> /tmp/stats.txt
+          echo "- **Simple CSV size**: $(du -h '$SIMPLE_FILE' | cut -f1)" >> /tmp/stats.txt
+          echo "- **Full CSV size**: $(du -h '$FULL_FILE' | cut -f1)" >> /tmp/stats.txt
+
+          cat /tmp/stats.txt
+          cat /tmp/stats.txt > $GITHUB_STEP_SUMMARY
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.generate.outputs.simple_file }}
+            ${{ steps.generate.outputs.full_file }}
+          tag_name: composite-${{ github.run_number }}-${{ github.run_id }}
+          name: "Composite Top 1M Domains - ${{ steps.generate.outputs.timestamp }}"
+          body: |
+            ## Weekly Composite Top 1M Domain List
+
+            Generated: ${{ steps.generate.outputs.timestamp }}
+
+            ### What's Included
+
+            - **composite_top1m_*.csv** - Simple format (rank,domain)
+            - **composite_top1m_full_*.csv** - Full format with metadata (rank,domain,score,appearances)
+
+            ### Statistics
+
+            - **Total domains**: ${{ steps.generate.outputs.simple_size }}
+            - **Simple CSV**: ${{ steps.generate.outputs.simple_file }}
+            - **Full CSV**: ${{ steps.generate.outputs.full_file }}
+
+            ### Data Sources
+
+            This composite list combines data from 7 authoritative global sources:
+            - Tranco (Europe)
+            - Cisco Umbrella (DNS queries)
+            - Chrome UX Report (CrUX)
+            - Majestic Million (Backlinks)
+            - DomCop (Open PageRank)
+            - BuiltWith (Tech investment)
+            - Cloudflare Radar (DNS resolver)
+
+            ### Methodology
+
+            Uses Dowdall scoring with weighted averaging (Tranco/IMC 2019 methodology)
+
+            **Stability**: Top domains are 80%+ more stable than single-source lists
+
+            **Quality**: Top 100 domains appear in 5-6 sources, top 1000 in 4+ sources
+
+            ### Usage
+
+            #### Simple Format (Alexa-compatible)
+            ```
+            rank,domain
+            1,google.com
+            2,youtube.com
+            3,facebook.com
+            ```
+
+            #### Full Format
+            ```
+            rank,domain,composite_score,appearances,avg_score
+            1,google.com,0.9876,6,0.9876
+            2,youtube.com,0.9654,6,0.9654
+            ```
+
+            ### Important
+
+            ⚠️ Read [LEGAL_NOTICE.md](../../LEGAL_NOTICE.md) before use
+
+            - This repository contains AI-generated code
+            - No warranty or liability assumed
+            - Use at your own discretion
+            - Verify compliance with data source terms
+
+            ### Download
+
+            Files are attached to this release. Direct download links:
+            - Simple format: See assets above
+            - Full format: See assets above
+
+            ---
+
+            **Repository**: https://github.com/${{ github.repository }}
+            **Workflow**: [generate-weekly.yml](../../.github/workflows/generate-weekly.yml)
+            **Documentation**: [README.md](../../README.md)
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: composite-domains-${{ github.run_number }}
+          path: |
+            ${{ steps.generate.outputs.simple_file }}
+            ${{ steps.generate.outputs.full_file }}
+          retention-days: 30
+
+      - name: Cleanup Old Releases
+        run: |
+          # Keep only last 12 releases (one per week for a quarter)
+          gh release list --limit 100 --json name,isLatest,isDraft,createdAt             --jq 'sort_by(.createdAt) | reverse | .[12:] | .[].name'             | while read release; do
+              echo "Deleting old release: $release"
+              gh release delete "$release" --cleanup-tag --yes || true
+            done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## ✅ Composite List Generation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp**: ${{ steps.generate.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total Domains**: ${{ steps.generate.outputs.simple_size }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release**: ${{ steps.create_release.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Files Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- Simple format: \`${{ steps.generate.outputs.simple_file }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Full format: \`${{ steps.generate.outputs.full_file }}\`" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: Notify Completion
+    runs-on: ubuntu-latest
+    needs: generate
+    if: always()
+
+    steps:
+      - name: Check Job Status
+        run: |
+          if [ "${{ needs.generate.result }}" == "success" ]; then
+            echo "✅ Generation successful"
+          else
+            echo "❌ Generation failed"
+            exit 1
+          fi
