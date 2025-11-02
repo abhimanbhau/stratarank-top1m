@@ -1,21 +1,114 @@
 ---
 layout: default
 ---
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<div id="content">Loading documentation...</div>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+    /* Simple animation for elements fading in on scroll */
+    .fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<div class="bg-gray-50 text-gray-800">
+    <!-- Hero Section -->
+    <div class="text-center py-20 px-4 sm:px-6 lg:px-8">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 fade-in">
+            StrataRank Top 1M
+        </h1>
+        <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 fade-in" style="transition-delay: 150ms;">
+            A Composite, Research-Grade Global Domain Ranking from Multi-Source Signals.
+        </p>
+        <div class="mt-8 flex justify-center gap-4 fade-in" style="transition-delay: 300ms;">
+            <a href="getting-started.html" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                Get Started
+            </a>
+            <a href="https://github.com/abhimanbhau/stratarank-top1m" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50">
+                View on GitHub
+            </a>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <h2 class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Features</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                    Stable, Reliable, and Comprehensive
+                </p>
+            </div>
+
+            <div class="mt-10">
+                <dl class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+                    <div class="relative fade-in">
+                        <dt>
+                            <p class="text-lg leading-6 font-medium text-gray-900">Global Coverage</p>
+                        </dt>
+                        <dd class="mt-2 text-base text-gray-500">
+                            Aggregates data from 7 major global sources across the USA, UK, Europe, and Australia, ensuring a diverse and comprehensive ranking.
+                        </dd>
+                    </div>
+                    <div class="relative fade-in">
+                        <dt>
+                            <p class="text-lg leading-6 font-medium text-gray-900">Manipulation-Resistant</p>
+                        </dt>
+                        <dd class="mt-2 text-base text-gray-500">
+                            Combining multiple independent sources makes the list extremely difficult to manipulate, providing a stable and reliable dataset.
+                        </dd>
+                    </div>
+                    <div class="relative fade-in">
+                        <dt>
+                            <p class="text-lg leading-6 font-medium text-gray-900">Research-Proven</p>
+                        </dt>
+                        <dd class="mt-2 text-base text-gray-500">
+                            Implements the peer-reviewed Dowdall scoring algorithm, proven to increase stability by over 80% compared to single-source lists.
+                        </dd>
+                    </div>
+                    <div class="relative fade-in">
+                        <dt>
+                            <p class="text-lg leading-6 font-medium text-gray-900">Fully Automated</p>
+                        </dt>
+                        <dd class="mt-2 text-base text-gray-500">
+                            A GitHub Actions workflow automatically regenerates the list every week, providing fresh and up-to-date domain rankings.
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Section -->
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+             <h2 class="text-3xl font-extrabold text-gray-900 fade-in">Explore the Documentation</h2>
+             <div class="mt-8 flex justify-center gap-4 flex-wrap fade-in" style="transition-delay: 150ms;">
+                <a href="methodology.html" class="text-base font-medium text-indigo-600 hover:text-indigo-500">Methodology</a>
+                <span class="text-gray-300">|</span>
+                <a href="legal.html" class="text-base font-medium text-indigo-600 hover:text-indigo-500">Legal Notice</a>
+             </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    fetch('../README.md')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(text => {
-            document.getElementById('content').innerHTML = marked.parse(text);
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
-            document.getElementById('content').innerHTML = '<p>Error loading documentation. Please check the console for details.</p>';
+    document.addEventListener("DOMContentLoaded", function() {
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(element => {
+            observer.observe(element);
         });
+    });
 </script>
